@@ -61,11 +61,11 @@ namespace AK.EventStream.InMemory
         public async Task<ImmutableArray<EventStreamInfo>> ListAsync()
         {
             var builder = ImmutableArray.CreateBuilder<EventStreamInfo>(_streams.Count);
-            foreach (var value in _streams.Values)
+            foreach (var stream in _streams.Values)
             {
                 try
                 {
-                    builder.Add(value.GetInfo());
+                    builder.Add(stream.GetInfo());
                 }
                 catch (EventStreamDeletedException)
                 {
