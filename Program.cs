@@ -34,13 +34,13 @@ namespace AK.EventStream
         {
             var streamA = await host.AddAsync("a");
 
-            // Open at the start of the stream and exclude non-even data.
+            // OpenAtStart returns an observable sequence that produces events from the start of the stream until the stream is sealed.
             (from segment in streamA.OpenAtStart() from e in segment where e.Data.IsEven() select e).Subscribe(O("a.OpenAtStart(Even)"));
 
             var writer = Observable.Interval(TimeSpan.FromSeconds(0.5)).Subscribe(i => streamA.WriteAsync((int)i));
             await Task.Delay(TimeSpan.FromSeconds(3));
 
-            // OpenAtStart returns an observable sequence that produces events from the start of the stream until the stream is sealed.
+            // As the stream now contains events, OpenAtStart will produce those events before any other.
             (from segment in streamA.OpenAtStart() from e in segment where e.Data.IsOdd() select e).Subscribe(O("a.OpenAtStart(Odd)"));
 
             await Task.Delay(TimeSpan.FromSeconds(3));
@@ -66,7 +66,7 @@ namespace AK.EventStream
             await streamA.SealAsync();
 
             var streamB = await host.AddAsync("b");
-            (from segment in streamB.OpenAtEnd() from e in segment select e).Subscribe(O("b.OpenAtStart(*)"));
+            (from segment in streamB.OpenAtEnd() from e in segment select e).Subscribe(O("b.OpenAtEnd(*)"));
 
             // Delete the stream, thus notifying observers of the _error_.
             // The behaviour of the *Open methods is now as follows:
