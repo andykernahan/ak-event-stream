@@ -38,7 +38,12 @@ namespace AK.EventStream
             IObservable<EventStreamSegment<int>> openAtStart = streamA.OpenAtStart();
             (from segment in openAtStart from e in segment where e.Data.IsEven() select e).Subscribe(O("a.OpenAtStart(Even)"));
 
-            var writer = Observable.Interval(TimeSpan.FromSeconds(0.5)).Subscribe(i => streamA.WriteAsync((int)i));
+            // Schedule a period WriteAsync to the stream.
+            var writer = Observable.Interval(TimeSpan.FromSeconds(0.5)).Subscribe(i =>
+            {
+                // WriteAsync writes one-or-more events (automically) to the stream.
+                Task<EventStreamSegment<int>> written = streamA.WriteAsync((int)i);
+            });
             await Task.Delay(TimeSpan.FromSeconds(3));
 
             // As the stream now contains events, OpenAtStart will produce those events before any other.
