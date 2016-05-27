@@ -32,28 +32,36 @@ namespace AK.EventStream
 
         private static async Task Exercise(IEventStreamHost<int> host)
         {
-            var streamA = await host.AddAsync("a");
+            IEventStream<int> streamA = await host.AddAsync("a");
 
             // OpenAtStart returns an observable sequence that produces events from the start of the stream until the stream is sealed.
-            (from segment in streamA.OpenAtStart() from e in segment where e.Data.IsEven() select e).Subscribe(O("a.OpenAtStart(Even)"));
+            IObservable<EventStreamSegment<int>> openAtStart = streamA.OpenAtStart();
+            (from segment in openAtStart from e in segment where e.Data.IsEven() select e).Subscribe(O("a.OpenAtStart(Even)"));
 
             var writer = Observable.Interval(TimeSpan.FromSeconds(0.5)).Subscribe(i => streamA.WriteAsync((int)i));
             await Task.Delay(TimeSpan.FromSeconds(3));
 
             // As the stream now contains events, OpenAtStart will produce those events before any other.
-            (from segment in streamA.OpenAtStart() from e in segment where e.Data.IsOdd() select e).Subscribe(O("a.OpenAtStart(Odd)"));
+            (from segment in openAtStart from e in segment where e.Data.IsOdd() select e).Subscribe(O("a.OpenAtStart(Odd)"));
 
             await Task.Delay(TimeSpan.FromSeconds(3));
 
             // OpenAtEnd returns an observable sequence that produces events until the stream is sealed.
-            (from segment in streamA.OpenAtEnd() from e in segment select e).Subscribe(O("a.OpenAtEnd(*)"));
+            IObservable<EventStreamSegment<int>> openAtEnd = streamA.OpenAtEnd();
+            (from segment in openAtEnd from e in segment select e).Subscribe(O("a.OpenAtEnd(*)"));
 
             await Task.Delay(TimeSpan.FromSeconds(3));
 
+            // GetInfoAsync returns a snapshot of information about the stream:
+            //     Sequence: The current sequence number.
+            //     Count:    The current number of events.
+            //     Sealed:   Indicates if the stream is sealed.
+            EventStreamInfo info = await streamA.GetInfoAsync();
+
             // OpenAt returns an observable sequence that produces events from the given sequence (inclusive) until the stream is sealed.
-            var info = await streamA.GetInfoAsync();
-            var openAtSequence = info.Sequence / 2;
-            (from segment in streamA.OpenAt(openAtSequence) from e in segment where e.Data.IsEven() select e).Subscribe(O($"a.OpenAt({openAtSequence},Even)"));
+            long openAtSequence = info.Sequence / 2;
+            IObservable<EventStreamSegment<int>> openAt = streamA.OpenAt(openAtSequence);
+            (from segment in openAt from e in segment where e.Data.IsEven() select e).Subscribe(O($"a.OpenAt({openAtSequence},Even)"));
 
             await Task.Delay(TimeSpan.FromSeconds(3));
             writer.Dispose();
