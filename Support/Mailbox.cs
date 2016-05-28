@@ -25,6 +25,9 @@ namespace AK.EventStream.Support
         private readonly Queue<TMessage> _messages = new Queue<TMessage>();
         private bool _delivering;
 
+        private static readonly WaitCallback DeliverMessagesWaitCallback =
+            (object state) => DeliverMessages((Mailbox<TMessage>)state);
+
         public Mailbox(Action<TMessage> recipient)
         {
             Debug.Assert(recipient != null);
@@ -60,24 +63,28 @@ namespace AK.EventStream.Support
                 return;
             }
             _delivering = true;
-            ThreadPool.QueueUserWorkItem(Deliver);
+            ThreadPool.QueueUserWorkItem(DeliverMessagesWaitCallback, this);
         }
 
-        private void Deliver(object _)
+        private static void DeliverMessages(Mailbox<TMessage> mailbox)
         {
+            var messages = mailbox._messages;
+            var recipient = mailbox._recipient;
             while (true)
             {
                 TMessage message;
-                lock (_messages)
+                lock (messages)
                 {
-                    if (_messages.Count == 0)
+                    Debug.Assert(mailbox._delivering);
+
+                    if (messages.Count == 0)
                     {
-                        _delivering = false;
+                        mailbox._delivering = false;
                         return;
                     }
-                    message = _messages.Dequeue();
+                    message = messages.Dequeue();
                 }
-                _recipient(message);
+                recipient(message);
             }
         }
     }
