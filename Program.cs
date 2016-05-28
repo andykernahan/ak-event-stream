@@ -96,7 +96,6 @@ namespace AK.EventStream
 
         private static IObserver<EventInfo<int>> O(string id)
         {
-            Console.WriteLine($"O({id})");
             return Observer.Create<EventInfo<int>>(
                 value => Console.WriteLine($"{id,-20}[{Thread.CurrentThread.ManagedThreadId}]: OnNext({value})"),
                 error => Console.WriteLine($"{id,-20}[{Thread.CurrentThread.ManagedThreadId}]: OnError({error})"),
