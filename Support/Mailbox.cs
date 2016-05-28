@@ -25,8 +25,7 @@ namespace AK.EventStream.Support
         private readonly Queue<TMessage> _messages = new Queue<TMessage>();
         private bool _delivering;
 
-        private static readonly WaitCallback DeliverMessagesWaitCallback =
-            (object state) => DeliverMessages((Mailbox<TMessage>)state);
+        private static readonly WaitCallback DeliverMessagesWaitCallback = state => DeliverMessages((Mailbox<TMessage>)state);
 
         public Mailbox(Action<TMessage> recipient)
         {
