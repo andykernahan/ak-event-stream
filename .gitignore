@@ -74,3 +74,6 @@ packages/
 
 #GhostDoc
 *.GhostDoc.xml
+
+#Rider
+.idea/
